@@ -135,6 +135,16 @@ Health check endpoint (for k8s / compose):
 curl http://localhost:8080/healthz
 ```
 
+### Makefile Shortcuts
+After adding the `Makefile`, you can use:
+```
+make build           # docker build
+make run PORT=9090   # run on custom port
+make logs            # follow logs
+make stop            # stop container
+make clean           # remove container & image
+```
+
 For iterative local development you usually still prefer the native dev server (`npm run dev`). The container image is optimized for production (static assets via nginx, long‑term caching for hashed files, SPA fallback, health probe).
 
 
