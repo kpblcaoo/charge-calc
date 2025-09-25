@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  app-build:
+    build: ..
+    image: charge-calc:bundle
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - app-build
+    ports:
+      - "8080:80"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ../dist:/srv/app:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+volumes:
+  caddy-data:
+  caddy-config:
