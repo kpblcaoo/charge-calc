@@ -3,9 +3,15 @@
 FROM node:22.12.0-alpine AS build
 WORKDIR /app
 
-# Install build deps first (better layer caching)
+# Install dependencies (prefer deterministic if lockfile present)
 COPY package*.json ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then \
+                  echo "[build] Using npm ci (lockfile detected)"; \
+                  npm ci; \
+            else \
+                  echo "[build] No package-lock.json -> falling back to npm install (non-deterministic)" >&2; \
+                  npm install; \
+            fi
 
 # Copy sources
 COPY tsconfig.json index.html vite.config.ts ./
