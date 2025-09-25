@@ -135,16 +135,18 @@ Health check endpoint (for k8s / compose):
 curl http://localhost:8080/healthz
 ```
 
-### Docker Compose (HTTPS Dev)
-Self-signed certificate (auto-generated) and HTTPS on 8443:
-```bash
-docker compose up --build
+### Infra (Compose / Reverse Proxy)
+See `infra/README.md` for:
 ```
-Then open:
-- http://localhost:8080
-- https://localhost:8443  (accept browser warning)
-
-Custom cert: place `fullchain.pem` and `privkey.pem` into the `certs` volume before starting.
+infra/docker-compose.dev.yml    # self-signed HTTPS local
+infra/docker-compose.caddy.yml  # Caddy proxy (enable real certs later)
+```
+Examples:
+```bash
+docker compose -f infra/docker-compose.dev.yml up --build
+docker compose -f infra/docker-compose.caddy.yml up --build
+```
+Customize `infra/caddy/Caddyfile` (remove `auto_https off`, add email) for Let's Encrypt.
 
 ### Makefile Shortcuts
 After adding the `Makefile`, you can use:

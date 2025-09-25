@@ -20,33 +20,8 @@ FROM nginx:1.27-alpine AS runtime
 ## Security hardening: remove default configs & temp files
 RUN rm -rf /etc/nginx/conf.d/* /tmp/* /var/tmp/*
 
-## Provide minimal nginx config tuned for a SPA / static assets
-COPY <<'EOF' /etc/nginx/conf.d/charge-calc.conf
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-
-    # Gzip basic text assets
-    gzip on;
-    gzip_types text/plain text/css application/javascript application/json application/wasm;
-    gzip_min_length 1024;
-
-    # Cache immutable build assets aggressively (hashed filenames)
-    location ~* \.(?:js|css|woff2?|ttf|eot|png|jpg|jpeg|gif|webp|svg)$ {
-        add_header Cache-Control "public, max-age=31536000, immutable";
-        try_files $uri =404;
-    }
-
-    # Index (SPA) fallback
-    location / {
-        try_files $uri /index.html;
-    }
-
-    # Basic health check endpoint
-    location /healthz { return 200 'ok'; add_header Content-Type text/plain; }
-}
-EOF
+## Copy nginx config from infra directory
+COPY infra/nginx/charge-calc.conf /etc/nginx/conf.d/charge-calc.conf
 
 # Copy compiled app
 COPY --from=build /app/dist /usr/share/nginx/html

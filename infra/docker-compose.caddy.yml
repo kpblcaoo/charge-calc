@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  app-build:
+    build: ..
+    image: charge-calc:bundle
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - app-build
+    environment:
+      - DOMAIN
+      - EMAIL
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ../dist:/srv/app:ro
+      - ./caddy/Caddyfile.local:/caddy/Caddyfile.local:ro
+      - ./caddy/caddy-entrypoint.sh:/caddy-entrypoint.sh:ro
+    entrypoint: ["/bin/sh","/caddy-entrypoint.sh"]
+volumes:
+  caddy-data:
+  caddy-config:
