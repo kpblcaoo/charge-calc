@@ -1,6 +1,12 @@
+import os
 import pandas as pd
-import tkinter as tk
-from tkinter import filedialog, messagebox
+try:  # GUI optional for headless test environments
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+except ImportError:  # pragma: no cover - environment without Tk
+    tk = None
+    filedialog = None
+    messagebox = None
 
 def calculate_charge(dp_list):
     if not dp_list:
@@ -26,13 +32,16 @@ def calculate_charge(dp_list):
             q += (currents[i] + currents[i + 1]) / 2 * dt
         return q
 
-def parse_file(file_path):
+def parse_xlsx(file_path):
+    """Parse existing XLSX format into internal data structure.
+
+    Returns: list[{'cycle': int, 'steps': [{'step': int, 'dp': list[{'time','voltage','current','charge'}]}]}]
+    """
     df = pd.read_excel(file_path, header=None)
     data = []
     current_cycle = None
     current_step = None
     step_data = []
-
     for row in df.itertuples(index=False):
         key = str(row[0]).strip() if pd.notna(row[0]) else ''
         if key == 'cy':
@@ -55,20 +64,84 @@ def parse_file(file_path):
                 charge = float(row[5]) if len(row) > 5 and pd.notna(row[5]) else None
                 step_data.append({'time': time_val, 'voltage': voltage, 'current': current_val, 'charge': charge})
             except (ValueError, IndexError):
-                pass  # skip invalid dp rows
+                pass
         elif key == 'de':
             if current_step is not None:
                 data[-1]['steps'].append({'step': current_step, 'dp': step_data})
                 current_step = None
                 step_data = []
-
-    # Process last step if any
     if current_step is not None and data:
         data[-1]['steps'].append({'step': current_step, 'dp': step_data})
-
     return data
 
+def parse_edf(file_path):
+    """Parse simplified EDF (text) format used by provided sample.
+
+    Assumptions:
+    - Lines start with two-letter keys followed by values.
+    - 'cy' starts a new cycle, 'st' starts a new step.
+    - 'dp time voltage current [...]' contain measurement points; charge not present -> None.
+    - No explicit step terminator; a new 'st' or 'cy' or EOF ends previous step.
+    """
+    data = []
+    current_cycle = None
+    current_step = None
+    step_data = []
+    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            key = parts[0]
+            if key == 'cy':
+                # flush previous step if exists
+                if current_cycle is not None and current_step is not None:
+                    data[-1]['steps'].append({'step': current_step, 'dp': step_data})
+                # start new cycle
+                try:
+                    current_cycle = int(parts[1]) if len(parts) > 1 else (current_cycle + 1 if current_cycle else 1)
+                except ValueError:
+                    current_cycle = (current_cycle + 1 if current_cycle else 1)
+                data.append({'cycle': current_cycle, 'steps': []})
+                current_step = None
+                step_data = []
+            elif key == 'st':
+                if current_step is not None and data:
+                    data[-1]['steps'].append({'step': current_step, 'dp': step_data})
+                try:
+                    current_step = int(parts[1]) if len(parts) > 1 else (current_step + 1 if current_step else 1)
+                except ValueError:
+                    current_step = (current_step + 1 if current_step else 1)
+                step_data = []
+            elif key == 'dp':
+                if len(parts) >= 4:
+                    try:
+                        time_val = float(parts[1])
+                        voltage = float(parts[2])
+                        current_val = float(parts[3])
+                        step_data.append({'time': time_val, 'voltage': voltage, 'current': current_val, 'charge': None})
+                    except ValueError:
+                        continue
+            else:
+                # ignore metadata lines
+                continue
+    # flush last step
+    if current_step is not None and data:
+        data[-1]['steps'].append({'step': current_step, 'dp': step_data})
+    return data
+
+def parse_file(file_path):
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.xlsx':
+        return parse_xlsx(file_path)
+    if ext == '.edf':
+        return parse_edf(file_path)
+    raise ValueError(f"Unsupported file extension: {ext}")
+
 def main_gui():
+    if tk is None:
+        raise RuntimeError("tkinter is not available in this environment")
     root = tk.Tk()
     root.title("Charge Calculator")
 
@@ -77,7 +150,7 @@ def main_gui():
 
     def select_file():
         nonlocal file_path
-        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+        file_path = filedialog.askopenfilename(filetypes=[("Data files", "*.xlsx *.edf"), ("Excel", "*.xlsx"), ("EDF", "*.edf")])
         if file_path:
             file_label.config(text=f"Selected: {file_path}")
 
