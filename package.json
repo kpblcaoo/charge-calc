@@ -1,0 +1,31 @@
+{
+	"name": "charge-calc-web",
+	"version": "0.2.0",
+	"private": true,
+	"type": "module",
+		"engines": {"node": ">=22.12.0"},
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc --noEmit && vite build",
+		"preview": "vite preview",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"react": "19.1.1",
+		"react-dom": "19.1.1",
+		"zod": "4.1.11"
+	},
+	"devDependencies": {
+		"@types/node": "24.5.2",
+		"@types/react": "19.1.13",
+		"@types/react-dom": "19.1.9",
+		"typescript": "5.9.2",
+		"vite": "7.1.7",
+		"vitest": "3.2.4"
+	},
+	"optionalDependencies": {
+		"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+	}
+}
