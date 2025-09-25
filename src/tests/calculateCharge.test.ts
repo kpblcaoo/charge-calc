@@ -17,4 +17,14 @@ describe('calculateCharge', () => {
     // area = (1+3)/2 * 1 = 2
     expect(calculateCharge(dp)).toBeCloseTo(2);
   });
+  it('prefers explicit last charge', () => {
+    const dp = [
+      { time: 0, voltage: 3.0, current: 0.5, charge: 1 },
+      { time: 5, voltage: 3.1, current: 0.5, charge: 2.5 }
+    ];
+    expect(calculateCharge(dp)).toBeCloseTo(2.5);
+  });
+  it('empty datapoints yields zero', () => {
+    expect(calculateCharge([])).toBe(0);
+  });
 });

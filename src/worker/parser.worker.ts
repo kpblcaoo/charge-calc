@@ -3,6 +3,7 @@ import { extractTokensFromEdf } from '../parsing/extractTokensFromEdf';
 import { extractTokensFromXlsx } from '../parsing/extractTokensFromXlsx';
 import { assemble } from '../domain/assemble';
 import { calculateCharge } from '../domain/calculateCharge';
+import { validateResult } from '../validation/validateResult';
 import { Token, ParsedResult } from '../domain/types';
 import { ParseRequest, ParseResponse } from './messages';
 import { MAX_FILE_BYTES } from '../config/limits';
@@ -22,7 +23,7 @@ self.onmessage = async (e: MessageEvent<ParseRequest>) => {
     } else {
       tokens = await extractTokensFromXlsx(msg.arrayBuffer);
     }
-    const parsed = assemble(tokens);
+  const parsed = assemble(tokens);
     // enrich with calculated charges (mutate)
     for (const c of parsed.cycles) {
       for (const s of c.steps) {
@@ -32,7 +33,9 @@ self.onmessage = async (e: MessageEvent<ParseRequest>) => {
       }
       (c as any).totalCharge = c.steps.reduce((acc, s) => acc + calculateCharge(s.dp), 0);
     }
-    const response: ParseResponse = { id: msg.id, status: 'ok', data: parsed };
+  // Validate structure after enrichment
+  const validated = validateResult(parsed);
+  const response: ParseResponse = { id: msg.id, status: 'ok', data: validated };
     (self as any).postMessage(response);
   } catch (err:any) {
     const resp: ParseResponse = { id: msg.id, status: 'error', error: err?.message || String(err) };
