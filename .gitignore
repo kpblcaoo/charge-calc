@@ -45,3 +45,4 @@ build/
 *.tmp
 *.orig
 *.rej
+certs/

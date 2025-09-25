@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    image: charge-calc:latest
+    container_name: charge-calc-web
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - certs:/certs:ro
+    depends_on:
+      - certgen
+  certgen:
+    image: alpine:3.20
+    container_name: charge-calc-certgen
+    command: ["/bin/sh","-c","if [ ! -f /out/fullchain.pem ]; then openssl req -x509 -nodes -newkey rsa:2048 -days 30 -subj '/CN=localhost' -keyout /out/privkey.pem -out /out/fullchain.pem; fi; sleep 3600"]
+    volumes:
+      - certs:/out
+volumes:
+  certs:

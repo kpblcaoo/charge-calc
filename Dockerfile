@@ -51,8 +51,11 @@ EOF
 # Copy compiled app
 COPY --from=build /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- http://127.0.0.1/healthz || exit 1
+
+# Certs mount point (optional when using docker compose with HTTPS)
+RUN mkdir -p /certs && chown -R nginx:nginx /certs
 
 # Labels (OCI)
 LABEL org.opencontainers.image.title="charge-calc-web" \

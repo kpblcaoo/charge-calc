@@ -101,7 +101,7 @@ See `docs/adr/001.md` for full ADR. Highlights:
 4. No change needed in `assemble` or `calculateCharge`
 
 ## Exporting Results
-(Not yet implemented) – Planned features: CSV/JSON export; possibly XLSX generation.
+Implemented: JSON & CSV (buttons in UI). Future: XLSX generation.
 
 ## Python Legacy Script
 `charge_calculator.py` retained temporarily for regression parity while validating TypeScript port. It will be removed once web version reaches feature parity + test coverage.
@@ -134,6 +134,17 @@ Health check endpoint (for k8s / compose):
 ```bash
 curl http://localhost:8080/healthz
 ```
+
+### Docker Compose (HTTPS Dev)
+Self-signed certificate (auto-generated) and HTTPS on 8443:
+```bash
+docker compose up --build
+```
+Then open:
+- http://localhost:8080
+- https://localhost:8443  (accept browser warning)
+
+Custom cert: place `fullchain.pem` and `privkey.pem` into the `certs` volume before starting.
 
 ### Makefile Shortcuts
 After adding the `Makefile`, you can use:
