@@ -28,7 +28,7 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ padding: '1rem', fontFamily: 'sans-serif' }}>
-      <h1>Charge Calculator (Web)</h1>
+      <h1>Расчет заряда</h1>
       {result && !loading && (
         <div style={{ margin: '0 0 0.75rem 0', display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => {
@@ -38,7 +38,7 @@ export const App: React.FC = () => {
             const a = document.createElement('a');
             a.href = url; a.download = 'result.json'; a.click();
             setTimeout(()=>URL.revokeObjectURL(url), 5000);
-          }}>Export JSON</button>
+          }}>Экспорт JSON</button>
           <button onClick={() => {
             if (!result) return;
             const blob = exportCsv(result);
@@ -46,35 +46,13 @@ export const App: React.FC = () => {
             const a = document.createElement('a');
             a.href = url; a.download = 'result.csv'; a.click();
             setTimeout(()=>URL.revokeObjectURL(url), 5000);
-          }}>Export CSV</button>
+          }}>Экспорт CSV</button>
         </div>
       )}
       <FileDropZone onFiles={handleFiles} />
-      {loading && <p>Parsing...</p>}
+      {loading && <p>Обработка...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {result && <ResultsTable data={result} />}
-      {result && !loading && (
-        <>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => {
-              if (!result) return;
-              const blob = exportJson(result);
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url; a.download = 'result.json'; a.click();
-              setTimeout(()=>URL.revokeObjectURL(url), 5000);
-            }}>Export JSON</button>
-            <button onClick={() => {
-              if (!result) return;
-              const blob = exportCsv(result);
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url; a.download = 'result.csv'; a.click();
-              setTimeout(()=>URL.revokeObjectURL(url), 5000);
-            }}>Export CSV</button>
-          </div>
-        </>
-      )}
     </div>
   );
 };
