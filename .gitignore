@@ -1,0 +1,47 @@
+### Node / Vite
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+### TypeScript build cache (if enabled later)
+*.tsbuildinfo
+
+### Env files
+.env
+.env.local
+.env.*.local
+
+### Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+### Coverage / Tests
+coverage/
+.nyc_output/
+
+### Python legacy artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+pip-wheel-metadata/
+
+### Build outputs (future)
+build/
+
+### Misc
+*.bak
+*.tmp
+*.orig
+*.rej
