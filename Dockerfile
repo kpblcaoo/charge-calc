@@ -3,12 +3,15 @@
 FROM node:22.12.0-alpine AS build
 WORKDIR /app
 
-# Install build deps first (better layer caching). Copy lockfile explicitly to avoid glob edge cases.
-COPY package.json ./
-COPY package-lock.json ./
-# Fail fast if lockfile missing (helps diagnose CI / context issues)
-RUN test -f package-lock.json || (echo "package-lock.json missing in build context" >&2 && ls -al && exit 1)
-RUN npm ci
+# Install dependencies (prefer deterministic if lockfile present)
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then \
+                  echo "[build] Using npm ci (lockfile detected)"; \
+                  npm ci; \
+            else \
+                  echo "[build] No package-lock.json -> falling back to npm install (non-deterministic)" >&2; \
+                  npm install; \
+            fi
 
 # Copy sources
 COPY tsconfig.json index.html vite.config.ts ./
