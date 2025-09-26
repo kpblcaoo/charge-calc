@@ -2,7 +2,7 @@ import React from 'react';
 import { ParsedResult } from '../domain/types';
 import { calculateCharge } from '../domain/calculateCharge';
 
-// Русифицированная таблица результатов: одна строка на шаг + итог по циклу одной строкой.
+// Таблица: для каждого цикла одна «шапка» + строки этапов + итог цикла.
 export const ResultsTable: React.FC<{ data: ParsedResult }> = ({ data }) => {
   return (
     <table style={{ borderCollapse: 'collapse', width: '100%' }}>
@@ -18,15 +18,20 @@ export const ResultsTable: React.FC<{ data: ParsedResult }> = ({ data }) => {
           const cycleTotal = c.steps.reduce((acc, s) => acc + calculateCharge(s.dp), 0);
           return (
             <React.Fragment key={c.cycle}>
+              <tr style={{ background: '#f6f6f6' }}>
+                <td style={{ ...td, fontWeight: 'bold' }}>{c.cycle}</td>
+                <td style={{ ...td, fontStyle: 'italic' }}>этап</td>
+                <td style={{ ...td, fontStyle: 'italic' }}>заряд</td>
+              </tr>
               {c.steps.map(s => (
                 <tr key={c.cycle + '-' + s.step}>
-                  <td style={td}>{c.cycle}</td>
+                  <td style={td}></td>
                   <td style={td}>{s.step}</td>
                   <td style={td}>{calculateCharge(s.dp).toFixed(6)}</td>
                 </tr>
               ))}
               <tr>
-                <td style={{ ...td, textAlign: 'right', fontWeight: 'bold' }} colSpan={2}>Итого по циклу {c.cycle}</td>
+                <td style={{ ...td, textAlign: 'right', fontWeight: 'bold' }} colSpan={2}>Итого</td>
                 <td style={{ ...td, fontWeight: 'bold' }}>{cycleTotal.toFixed(6)}</td>
               </tr>
             </React.Fragment>
