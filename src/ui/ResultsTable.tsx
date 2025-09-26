@@ -14,24 +14,34 @@ export const ResultsTable: React.FC<{ data: ParsedResult }> = ({ data }) => {
         </tr>
       </thead>
       <tbody>
-        {data.cycles.map(c => {
-          const cycleTotal = c.steps.reduce((acc, s) => acc + calculateCharge(s.dp), 0);
-          return (
-            <React.Fragment key={c.cycle}>
-              {c.steps.map((s, idx) => (
-                <tr key={c.cycle + '-' + s.step}>
-                  <td style={td}>{idx === 0 ? c.cycle : ''}</td>
-                  <td style={td}>{s.step}</td>
-                  <td style={td}>{calculateCharge(s.dp).toFixed(6)}</td>
-                </tr>
-              ))}
-              <tr>
-                <td style={{ ...td, textAlign: 'right', fontWeight: 'bold' }} colSpan={2}>Итого по циклу {c.cycle}</td>
-                <td style={{ ...td, fontWeight: 'bold' }}>{cycleTotal.toFixed(6)}</td>
-              </tr>
-            </React.Fragment>
-          );
-        })}
+        {(() => {
+          // Объединяем возможные дублирующиеся циклы (если файл содержит 'cy N' перед каждым этапом)
+          const order: number[] = [];
+            const map = new Map<number, typeof data.cycles[0]['steps']>();
+            for (const c of data.cycles) {
+              if (!map.has(c.cycle)) { order.push(c.cycle); map.set(c.cycle, []);} 
+              map.get(c.cycle)!.push(...c.steps);
+            }
+            return order.map(cycleNum => {
+              const steps = map.get(cycleNum)!;
+              const total = steps.reduce((acc, s) => acc + calculateCharge(s.dp), 0);
+              return (
+                <React.Fragment key={cycleNum}>
+                  {steps.map((s, idx) => (
+                    <tr key={cycleNum + '-' + s.step + '-' + idx}>
+                      <td style={td}>{idx === 0 ? cycleNum : ''}</td>
+                      <td style={td}>{s.step}</td>
+                      <td style={td}>{calculateCharge(s.dp).toFixed(6)}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 'bold' }} colSpan={2}>Итого по циклу {cycleNum}</td>
+                    <td style={{ ...td, fontWeight: 'bold' }}>{total.toFixed(6)}</td>
+                  </tr>
+                </React.Fragment>
+              );
+            });
+        })()}
       </tbody>
     </table>
   );
