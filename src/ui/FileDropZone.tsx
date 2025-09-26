@@ -14,7 +14,7 @@ export const FileDropZone: React.FC<{ onFiles: (fl: FileList) => void }> = ({ on
 
   return (
     <div onDrop={onDrop} onDragOver={onDragOver} style={{ border: '2px dashed #666', padding: '1rem', marginBottom: '1rem' }}>
-      <p>Drop EDF/XLSX file here or select:</p>
+  <p>Перетащите файл EDF/XLSX сюда или выберите ниже:</p>
       <input type="file" accept=".edf,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onChange} />
     </div>
   );
