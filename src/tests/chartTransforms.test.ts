@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest';
+import { flattenCyclePoints, downsample } from '../domain/chartTransforms';
+
+const sampleCycle = {
+  cycle: 1,
+  steps: [
+    {
+      step: 1,
+      dp: [
+        { time: 0, voltage: 3.7, current: 0.1 },
+        { time: 10, voltage: 3.8, current: 0.12 },
+      ],
+    },
+    {
+      step: 2,
+      dp: [
+        { time: 0, voltage: 3.9, current: 0.15 },
+        { time: 5, voltage: 4, current: 0.18 },
+      ],
+    },
+  ],
+} as const;
+
+describe('flattenCyclePoints', () => {
+  it('normalizes time across steps and keeps order', () => {
+    const points = flattenCyclePoints({
+      cycle: sampleCycle.cycle,
+      steps: sampleCycle.steps.map((step) => ({
+        step: step.step,
+        dp: step.dp.map((d) => ({ ...d })),
+      })),
+    });
+
+    expect(points).toHaveLength(4);
+    expect(points[0].time).toBe(0);
+    expect(points[1].time).toBe(10);
+    // step 2 should continue from previous offset (10)
+    expect(points[2].time).toBe(10);
+    expect(points[3].time).toBe(15);
+  });
+
+  it('supports downsampling option', () => {
+    const denseCycle = {
+      cycle: 1,
+      steps: [
+        {
+          step: 1,
+          dp: Array.from({ length: 1000 }, (_, idx) => ({
+            time: idx,
+            voltage: idx * 0.01,
+            current: 0.1,
+          })),
+        },
+      ],
+    };
+
+    const points = flattenCyclePoints(denseCycle, { downsample: { maxPoints: 100 } });
+    expect(points.length).toBeLessThanOrEqual(101);
+    expect(points[0].time).toBe(0);
+    expect(points[points.length - 1].time).toBe(999);
+  });
+});
+
+describe('downsample', () => {
+  it('returns last point even when stride skips it', () => {
+    const data = Array.from({ length: 10 }, (_, idx) => idx);
+    const sampled = downsample(data, 3);
+    expect(sampled[0]).toBe(0);
+    expect(sampled[sampled.length - 1]).toBe(9);
+    expect(sampled.length).toBeGreaterThan(3);
+  });
+});
