@@ -3,13 +3,6 @@
 }
 
 http://localhost:8080 {
-  root * /srv/app
-  try_files {path} /index.html
-  file_server
   @health path /healthz
-  respond @health 200 {
-    body "ok"
-    close
-  }
-  header /* Cache-Control "public, max-age=31536000, immutable"
+  reverse_proxy app:80
 }

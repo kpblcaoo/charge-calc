@@ -9,6 +9,10 @@ Web-based charge calculation tool with support for EDF (text token format) and X
 - Charge calculation identical to legacy Python logic:
   - Use last explicit charge value if present
   - Otherwise integrate current over time (constant current optimization / trapezoidal rule)
+- Interactive visualization layer powered by Plotly:
+  - Mini charts rendered inline for each cycle with voltage/current/charge toggles
+  - Full dataset chart pinned to the bottom with cycle filters, metric toggles and shared zooming
+  - Cycle modal with a detailed Plotly view for deeper inspection
 - Zod runtime validation (planned – schema present)
 - Simple drag & drop UI + tabular results + per‑step and per‑cycle totals
 
@@ -72,7 +76,13 @@ npm run preview   # Serve production build locally
 4. Format-specific token extractor emits uniform tokens
 5. `assemble` builds domain structure (Cycles → Steps → DataPoints)
 6. Charge computed per step + totals (currently annotated ad-hoc; can be formalized)
-7. UI renders results table
+7. UI renders results table together with inline mini charts
+8. Optional modal + full dataset Plotly charts visualize voltage, current and charge trends
+
+## Chart Controls
+- **MiniCycleChart** — appears next to each cycle row. Click to open a modal with the same data. Toggle current/charge traces as needed; voltage is always shown.
+- **FullDatasetChart** — aggregates all cycles at the bottom of the page. Use the cycle filter buttons to hide/show cycles, and enable the current/charge checkboxes to overlay respective metrics (each on its own axis). The Plotly toolbar remains available for zoom, pan and export.
+- **Cycle Details Modal** — opens from a mini chart tap/click. Provides a larger canvas with the same toggles enabled for side-by-side comparison of metrics.
 
 ## EDF Format (Simplified)
 Lines of key + values, e.g.
@@ -113,6 +123,7 @@ Implemented: JSON & CSV (buttons in UI). Future: XLSX generation.
 - [ ] Performance benchmark (EDF large file) + metrics doc
 - [ ] ESLint + Prettier config
 - [ ] Charge annotation normalization (store computed charge explicitly)
+- [ ] Screenshot gallery documenting Plotly charts and modal flows
 
 ## Docker
 Build production container:

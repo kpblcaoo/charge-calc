@@ -5,7 +5,7 @@ TARGET=/etc/caddy/Caddyfile
 mkdir -p /etc/caddy
 
 if [ -n "${DOMAIN}" ]; then
-  echo "[caddy-entrypoint] DOMAIN detected: ${DOMAIN} -> enabling automatic HTTPS" >&2
+  echo "[caddy-entrypoint] DOMAIN detected: ${DOMAIN} -> enabling automatic HTTPS reverse proxy" >&2
   {
     if [ -n "${EMAIL}" ]; then
       echo "{"
@@ -14,19 +14,13 @@ if [ -n "${DOMAIN}" ]; then
       echo
     fi
     echo "${DOMAIN} {"
-    echo "  root * /srv/app"
-    echo "  try_files {path} /index.html"
-    echo "  file_server"
+    echo "  encode gzip"
     echo "  @health path /healthz"
-    echo "  respond @health 200 {"
-    echo "    body \"ok\""
-    echo "    close"
-    echo "  }"
-    echo "  header /* Cache-Control \"public, max-age=31536000, immutable\""
+    echo "  reverse_proxy app:80"
     echo "}"
   } > "$TARGET"
 else
-  echo "[caddy-entrypoint] No DOMAIN -> using local HTTP config" >&2
+  echo "[caddy-entrypoint] No DOMAIN -> using local HTTP reverse proxy config" >&2
   cp /caddy/Caddyfile.local "$TARGET"
 fi
 
