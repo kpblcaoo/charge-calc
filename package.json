@@ -15,10 +15,16 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"assert": "^2.0.0",
+		"buffer": "^6.0.3",
+		"node-stdlib-browser": "^1.2.0",
 		"plotly.js": "2.35.2",
+		"process": "^0.11.10",
 		"react": "19.1.1",
 		"react-dom": "19.1.1",
 		"react-plotly.js": "2.6.0",
+		"stream-browserify": "^3.0.0",
+		"util": "^0.12.5",
 		"zod": "4.1.11"
 	},
 	"devDependencies": {
