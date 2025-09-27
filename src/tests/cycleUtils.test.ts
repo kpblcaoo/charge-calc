@@ -30,6 +30,12 @@ describe('calculateCycleStats', () => {
     expect(stats.chargeInput).toBeCloseTo(5, 6);
     expect(stats.dischargeOutput).toBeCloseTo(2, 6);
     expect(stats.efficiency).toBeCloseTo(0.4, 6);
+    expect(stats.hasEnergyData).toBe(true);
+    expect(stats.energyInput).not.toBeNull();
+    expect(stats.energyInput ?? 0).toBeCloseTo(18.625, 6);
+    expect(stats.energyOutput).not.toBeNull();
+    expect(stats.energyOutput ?? 0).toBeCloseTo(7.25, 6);
+  expect(stats.energyEfficiency).toBeCloseTo(0.3892617, 6);
   });
 
   it('returns null efficiency when no positive charge', () => {
@@ -49,5 +55,29 @@ describe('calculateCycleStats', () => {
     expect(stats.chargeInput).toBeCloseTo(0, 6);
     expect(stats.dischargeOutput).toBeGreaterThan(0);
     expect(stats.efficiency).toBeNull();
+    expect(stats.hasEnergyData).toBe(true);
+    expect(stats.energyInput).toBe(0);
+    expect(stats.energyOutput).toBeGreaterThan(0);
+    expect(stats.energyEfficiency).toBeNull();
+  });
+
+  it('marks energy metrics as unavailable when voltage is missing', () => {
+    const stats = calculateCycleStats({
+      cycle: 3,
+      steps: [
+        {
+          step: 1,
+          dp: [
+            { time: 0, voltage: Number.NaN, current: 0.3 },
+            { time: 5, voltage: Number.NaN, current: 0.3 },
+          ],
+        },
+      ],
+    });
+
+    expect(stats.hasEnergyData).toBe(false);
+    expect(stats.energyInput).toBeNull();
+    expect(stats.energyOutput).toBeNull();
+    expect(stats.energyEfficiency).toBeNull();
   });
 });

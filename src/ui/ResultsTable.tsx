@@ -17,6 +17,8 @@ interface CycleSummary {
   chargeInput: number;
   dischargeOutput: number;
   efficiency: number | null;
+  energyEfficiency: number | null;
+  hasEnergyData: boolean;
 }
 
 // Представление результатов: карточки циклов с мини-графиком и таблицей этапов.
@@ -34,6 +36,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
         chargeInput: stats.chargeInput,
         dischargeOutput: stats.dischargeOutput,
         efficiency: stats.efficiency,
+        energyEfficiency: stats.energyEfficiency,
+        hasEnergyData: stats.hasEnergyData,
       };
     }),
   [cycles]);
@@ -42,10 +46,18 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
     return <p>Нет данных для отображения.</p>;
   }
 
+  const energyUnavailable = summaries.some((summary) => !summary.hasEnergyData);
+
   return (
     <div style={containerStyle}>
-      {summaries.map(({ cycle, totalCharge, totalSteps, totalPoints, efficiency }) => {
+      {energyUnavailable && (
+        <div style={warningStyle}>
+          ⚠️ В исходных данных отсутствует напряжение, поэтому энергетический КПД не рассчитан.
+        </div>
+      )}
+      {summaries.map(({ cycle, totalCharge, totalSteps, totalPoints, efficiency, energyEfficiency }) => {
         const efficiencyPercent = efficiency != null ? efficiency * 100 : null;
+        const energyEfficiencyPercent = energyEfficiency != null ? energyEfficiency * 100 : null;
         return (
           <section key={cycle.cycle} style={cardStyle}>
           <div style={cardHeaderStyle}>
@@ -56,8 +68,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
                 <Stat label="Точек" value={totalPoints} />
                 <Stat label="Σ заряд" value={totalCharge.toFixed(6)} units="Кл" />
                 <Stat
-                  label="КПД"
+                  label="КПД (заряд)"
                   value={efficiencyPercent != null ? efficiencyPercent.toFixed(1) : '—'}
+                  units="%"
+                />
+                <Stat
+                  label="КПД (энергия)"
+                  value={energyEfficiencyPercent != null ? energyEfficiencyPercent.toFixed(1) : '—'}
                   units="%"
                 />
               </div>
@@ -109,6 +126,15 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '1.5rem',
+};
+
+const warningStyle: React.CSSProperties = {
+  padding: '0.75rem 1rem',
+  borderRadius: 12,
+  background: 'rgba(245, 158, 11, 0.1)',
+  border: '1px solid rgba(245, 158, 11, 0.35)',
+  color: '#a16207',
+  fontSize: 14,
 };
 
 const cardStyle: React.CSSProperties = {

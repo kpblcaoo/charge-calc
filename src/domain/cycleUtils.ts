@@ -1,5 +1,6 @@
 import { Cycle, ParsedResult, Step } from './types';
 import { calculateCharge } from './calculateCharge';
+import { calculateEnergy } from './calculateEnergy';
 
 export interface CycleStats {
   cycle: number;
@@ -9,6 +10,10 @@ export interface CycleStats {
   chargeInput: number;
   dischargeOutput: number;
   efficiency: number | null;
+  energyInput: number | null;
+  energyOutput: number | null;
+  energyEfficiency: number | null;
+  hasEnergyData: boolean;
 }
 
 export function normalizeCycles(result: ParsedResult): Cycle[] {
@@ -39,9 +44,14 @@ export function calculateCycleStats(cycle: Cycle): CycleStats {
   let totalCharge = 0;
   let chargeInput = 0;
   let dischargeOutput = 0;
+  let energyInput = 0;
+  let energyOutput = 0;
+  let energyDataAvailable = true;
+  let anyEnergyCalculated = false;
 
   for (const step of cycle.steps) {
     const stepCharge = calculateCharge(step.dp);
+    const stepEnergy = calculateEnergy(step.dp);
     totalPoints += step.dp.length;
     totalCharge += stepCharge;
     if (stepCharge >= 0) {
@@ -49,9 +59,22 @@ export function calculateCycleStats(cycle: Cycle): CycleStats {
     } else {
       dischargeOutput += Math.abs(stepCharge);
     }
+
+    if (stepEnergy == null) {
+      energyDataAvailable = false;
+    } else {
+      anyEnergyCalculated = true;
+      if (stepEnergy >= 0) {
+        energyInput += stepEnergy;
+      } else {
+        energyOutput += Math.abs(stepEnergy);
+      }
+    }
   }
 
   const efficiency = chargeInput > 0 ? dischargeOutput / chargeInput : null;
+  const hasEnergyData = energyDataAvailable && anyEnergyCalculated;
+  const energyEfficiency = hasEnergyData && energyInput > 0 ? energyOutput / energyInput : null;
 
   return {
     cycle: cycle.cycle,
@@ -61,5 +84,9 @@ export function calculateCycleStats(cycle: Cycle): CycleStats {
     chargeInput,
     dischargeOutput,
     efficiency,
+    energyInput: hasEnergyData ? energyInput : null,
+    energyOutput: hasEnergyData ? energyOutput : null,
+    energyEfficiency,
+    hasEnergyData,
   };
 }
