@@ -13,6 +13,12 @@ describe('export utilities', () => {
   it('exports CSV blob with header', async () => {
     const blob = exportCsv(sample);
     const text = await blob.text();
-    expect(text.split('\n')[0]).toContain('cycle,step,time');
+    const lines = text.trim().split('\n');
+    expect(lines[0]).toBe(
+      'cycle,step,time,voltage,current,charge,calculatedCharge,totalCycleCharge,calculatedEnergy,totalCycleEnergyInput,totalCycleEnergyOutput,chargeEfficiency,energyEfficiency',
+    );
+    const values = lines[1].split(',');
+    expect(values).toHaveLength(13);
+    expect(values[8]).toBe('0');
   });
 });
