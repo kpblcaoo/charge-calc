@@ -57,9 +57,37 @@ export function flattenCyclePoints(cycle: Cycle, options?: FlattenOptions): Char
     }
   }
 
+  if (raw.length) {
+    fillMissingCharge(raw);
+  }
+
   if (!options?.downsample) return raw;
   const maxPoints = options.downsample.maxPoints ?? DEFAULT_MAX_POINTS;
   return downsample(raw, maxPoints);
+}
+
+function fillMissingCharge(points: ChartPoint[]): void {
+  let runningCharge = 0;
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    if (point.charge != null) {
+      runningCharge = point.charge;
+      continue;
+    }
+
+    if (i === 0) {
+      point.charge = runningCharge;
+      continue;
+    }
+
+    const prev = points[i - 1];
+    const dt = point.time - prev.time;
+    if (dt > 0) {
+      const avgCurrent = (prev.current + point.current) / 2;
+      runningCharge += avgCurrent * dt;
+    }
+    point.charge = runningCharge;
+  }
 }
 
 export function downsample<T>(points: T[], maxPoints: number): T[] {

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Cycle, ParsedResult } from '../domain/types';
 import { calculateCharge } from '../domain/calculateCharge';
-import { normalizeCycles } from '../domain/cycleUtils';
+import { calculateCycleStats, normalizeCycles } from '../domain/cycleUtils';
 import { MiniCycleChart } from './charts/MiniCycleChart';
 
 interface ResultsTableProps {
@@ -14,22 +14,29 @@ interface CycleSummary {
   totalCharge: number;
   totalSteps: number;
   totalPoints: number;
+  chargeInput: number;
+  dischargeOutput: number;
+  efficiency: number | null;
 }
 
 // Представление результатов: карточки циклов с мини-графиком и таблицей этапов.
 export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect }) => {
   const cycles = useMemo(() => normalizeCycles(data), [data]);
 
-  const summaries = useMemo<CycleSummary[]>(
-    () =>
-      cycles.map((cycle) => ({
+  const summaries = useMemo<CycleSummary[]>(() =>
+    cycles.map((cycle) => {
+      const stats = calculateCycleStats(cycle);
+      return {
         cycle,
-        totalCharge: cycle.steps.reduce((acc, step) => acc + calculateCharge(step.dp), 0),
-        totalSteps: cycle.steps.length,
-        totalPoints: cycle.steps.reduce((acc, step) => acc + step.dp.length, 0),
-      })),
-    [cycles],
-  );
+        totalCharge: stats.totalCharge,
+        totalSteps: stats.totalSteps,
+        totalPoints: stats.totalPoints,
+        chargeInput: stats.chargeInput,
+        dischargeOutput: stats.dischargeOutput,
+        efficiency: stats.efficiency,
+      };
+    }),
+  [cycles]);
 
   if (!summaries.length) {
     return <p>Нет данных для отображения.</p>;
@@ -37,8 +44,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
 
   return (
     <div style={containerStyle}>
-      {summaries.map(({ cycle, totalCharge, totalSteps, totalPoints }) => (
-        <section key={cycle.cycle} style={cardStyle}>
+      {summaries.map(({ cycle, totalCharge, totalSteps, totalPoints, efficiency }) => {
+        const efficiencyPercent = efficiency != null ? efficiency * 100 : null;
+        return (
+          <section key={cycle.cycle} style={cardStyle}>
           <div style={cardHeaderStyle}>
             <div style={cardInfoStyle}>
               <h2 style={cycleTitleStyle}>Цикл {cycle.cycle}</h2>
@@ -46,6 +55,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
                 <Stat label="Этапов" value={totalSteps} />
                 <Stat label="Точек" value={totalPoints} />
                 <Stat label="Σ заряд" value={totalCharge.toFixed(6)} units="Кл" />
+                <Stat
+                  label="КПД"
+                  value={efficiencyPercent != null ? efficiencyPercent.toFixed(1) : '—'}
+                  units="%"
+                />
               </div>
             </div>
             <div style={chartWrapperStyle}>
@@ -85,7 +99,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
             </tbody>
           </table>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 };

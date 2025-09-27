@@ -7,6 +7,7 @@ import { PlotlyChart } from './PlotlyChart';
 export interface FullDatasetChartProps {
   cycles: Cycle[];
   maxPointsPerCycle?: number;
+  initialShowVoltage?: boolean;
   initialShowCurrent?: boolean;
   initialShowCharge?: boolean;
   height?: number;
@@ -33,6 +34,7 @@ const DEFAULT_HEIGHT = 420;
 export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
   cycles,
   maxPointsPerCycle = DEFAULT_MAX_POINTS,
+  initialShowVoltage = true,
   initialShowCurrent = false,
   initialShowCharge = true,
   height = DEFAULT_HEIGHT,
@@ -42,6 +44,7 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
   const [visibleCycleIds, setVisibleCycleIds] = useState<number[]>(() =>
     cycles.map((cycle) => cycle.cycle),
   );
+  const [showVoltage, setShowVoltage] = useState(initialShowVoltage);
   const [showCurrent, setShowCurrent] = useState(initialShowCurrent);
   const [showCharge, setShowCharge] = useState(initialShowCharge);
 
@@ -70,26 +73,31 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
       const isHighlighted = highlightCycle != null && cycle === highlightCycle;
       const alpha = isHighlighted ? 1 : 0.85;
 
-      const color = rgba(baseColor, alpha);
       const voltageSeries = metrics.voltage;
       const currentSeries = metrics.current;
       const chargeSeries = metrics.charge;
-
-      traces.push({
-        type: 'scatter',
-        mode: 'lines',
-        name: `Цикл ${cycle} · U`,
-        legendgroup: `cycle-${cycle}`,
-        x: voltageSeries.x,
-        y: voltageSeries.y,
-        line: { color, width: isHighlighted ? 3 : 2 },
-        hovertemplate: 'Цикл %{text}<br>t=%{x:.2f}s<br>U=%{y:.3f}В<extra></extra>',
-        text: Array(voltageSeries.x.length).fill(cycle),
-      } satisfies Data);
-
+      const shouldShowVoltage = showVoltage && voltageSeries.hasData;
       const shouldShowCurrent = showCurrent && currentSeries.hasData;
       const shouldShowCharge = showCharge && chargeSeries.hasData;
       const chargeAxisName = shouldShowCurrent ? 'y3' : 'y2';
+
+      const voltageColor = rgba(baseColor, alpha);
+      const currentColor = rgba(baseColor, isHighlighted ? 0.75 : 0.6);
+      const chargeColor = rgba(lighten(baseColor, 0.25), alpha);
+
+      if (shouldShowVoltage) {
+        traces.push({
+          type: 'scatter',
+          mode: 'lines',
+          name: `Цикл ${cycle} · U`,
+          legendgroup: `cycle-${cycle}`,
+          x: voltageSeries.x,
+          y: voltageSeries.y,
+          line: { color: voltageColor, width: isHighlighted ? 3 : 2.2 },
+          hovertemplate: 'Цикл %{text}<br>t=%{x:.2f}s<br>U=%{y:.3f}В<extra></extra>',
+          text: Array(voltageSeries.x.length).fill(cycle),
+        } satisfies Data);
+      }
 
       if (shouldShowCurrent) {
         traces.push({
@@ -100,7 +108,7 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
           x: currentSeries.x,
           y: currentSeries.y,
           yaxis: 'y2',
-          line: { color, width: isHighlighted ? 2 : 1.5, dash: 'dot' },
+          line: { color: currentColor, width: isHighlighted ? 2 : 1.5, dash: 'dot' },
           hovertemplate: 'Цикл %{text}<br>t=%{x:.2f}s<br>I=%{y:.3f}A<extra></extra>',
           text: Array(currentSeries.x.length).fill(cycle),
         } satisfies Data);
@@ -115,7 +123,11 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
           x: chargeSeries.x,
           y: chargeSeries.y,
           yaxis: chargeAxisName,
-          line: { color, width: isHighlighted ? 2.6 : 1.8, dash: 'solid' },
+          line: {
+            color: chargeColor,
+            width: isHighlighted ? 2.6 : 2,
+            dash: 'dashdot',
+          },
           hovertemplate: 'Цикл %{text}<br>t=%{x:.2f}s<br>Q=%{y:.3f}Кл<extra></extra>',
           text: Array(chargeSeries.x.length).fill(cycle),
         } satisfies Data);
@@ -123,7 +135,7 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
     });
 
     return traces;
-  }, [series, visibleCycleIds, showCurrent, showCharge, highlightCycle]);
+  }, [series, visibleCycleIds, showVoltage, showCurrent, showCharge, highlightCycle]);
 
   const layout = useMemo<Partial<Layout>>(() => {
     const rightMargin = 32 + (showCurrent ? 36 : 0) + (showCharge ? 40 : 0);
@@ -143,6 +155,7 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
         title: 'Напряжение, В',
         tickfont: { size: 12 },
         titlefont: { size: 13 },
+        visible: showVoltage,
       },
       paper_bgcolor: 'white',
       plot_bgcolor: 'white',
@@ -181,12 +194,12 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
     }
 
     return baseLayout;
-  }, [height, showCurrent, showCharge]);
+  }, [height, showVoltage, showCurrent, showCharge]);
 
   const chartRevision = useMemo(() => {
     const hash = visibleCycleIds.reduce((acc, id) => acc * 31 + id, 7);
-    return hash + (showCurrent ? 1000 : 0) + (showCharge ? 2000 : 0);
-  }, [visibleCycleIds, showCurrent, showCharge]);
+    return hash + (showVoltage ? 1000 : 0) + (showCurrent ? 2000 : 0) + (showCharge ? 3000 : 0);
+  }, [visibleCycleIds, showVoltage, showCurrent, showCharge]);
 
   const handleToggleCycle = (cycleId: number) => {
     setVisibleCycleIds((prev) => {
@@ -239,6 +252,14 @@ export const FullDatasetChart: React.FC<FullDatasetChartProps> = ({
           <label style={checkboxLabelStyle}>
             <input
               type="checkbox"
+              checked={showVoltage}
+              onChange={(event) => setShowVoltage(event.target.checked)}
+            />
+            <span>Показывать напряжение</span>
+          </label>
+          <label style={checkboxLabelStyle}>
+            <input
+              type="checkbox"
               checked={showCurrent}
               onChange={(event) => setShowCurrent(event.target.checked)}
             />
@@ -275,6 +296,22 @@ function rgba(hex: string, alpha: number): string {
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function lighten(hex: string, amount: number): string {
+  if (!hex.startsWith('#')) return hex;
+  const stripped = hex.slice(1);
+  const bigint = parseInt(stripped, 16);
+  let r = (bigint >> 16) & 255;
+  let g = (bigint >> 8) & 255;
+  let b = bigint & 255;
+
+  r = Math.min(255, Math.round(r + (255 - r) * amount));
+  g = Math.min(255, Math.round(g + (255 - g) * amount));
+  b = Math.min(255, Math.round(b + (255 - b) * amount));
+
+  const toHex = (value: number) => value.toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 const containerStyle: React.CSSProperties = {

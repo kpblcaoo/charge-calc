@@ -35,6 +35,9 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
 
   const showCurrentTrace = showCurrent && currentSeries.hasData;
   const showChargeTrace = showCharge && chargeSeries.hasData;
+  const voltageColor = '#1f77b4';
+  const currentColor = '#ff7f0e';
+  const chargeColor = '#d62728';
 
   const voltageTrace = useMemo<Data>(() => ({
     type: 'scatter',
@@ -42,7 +45,7 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
     name: 'Напряжение',
     x: voltageSeries.x,
     y: voltageSeries.y,
-    line: { color: '#1f77b4', width: 2 },
+  line: { color: voltageColor, width: 2.2 },
     hovertemplate: 't=%{x:.2f}s<br>U=%{y:.3f}В<extra></extra>',
   }), [voltageSeries]);
 
@@ -55,7 +58,7 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
       x: currentSeries.x,
       y: currentSeries.y,
       yaxis: 'y2',
-      line: { color: '#ff7f0e', width: 1.5, dash: 'dot' },
+  line: { color: currentColor, width: 1.6, dash: 'dot' },
       hovertemplate: 't=%{x:.2f}s<br>I=%{y:.3f}A<extra></extra>',
     } satisfies Data;
   }, [currentSeries, showCurrentTrace]);
@@ -70,7 +73,7 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
       x: chargeSeries.x,
       y: chargeSeries.y,
       yaxis: axisName,
-      line: { color: '#2ca02c', width: 1.8 },
+  line: { color: chargeColor, width: 2.4, dash: 'dash' },
       hovertemplate: 't=%{x:.2f}s<br>Q=%{y:.3f}Кл<extra></extra>',
     } satisfies Data;
   }, [chargeSeries, showChargeTrace, showCurrentTrace]);
