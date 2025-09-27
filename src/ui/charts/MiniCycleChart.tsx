@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Data, Layout } from 'plotly.js';
 import type { Cycle } from '../../domain/types';
-import { flattenCyclePoints } from '../../domain/chartTransforms';
+import { buildCycleMetricSeries } from '../../domain/chartTransforms';
 import { PlotlyChart } from './PlotlyChart';
 
 export interface MiniCycleChartProps {
@@ -9,6 +9,7 @@ export interface MiniCycleChartProps {
   height?: number;
   maxPoints?: number;
   showCurrent?: boolean;
+  showCharge?: boolean;
   onClick?: () => void;
 }
 
@@ -20,47 +21,80 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
   height = DEFAULT_HEIGHT,
   maxPoints = DEFAULT_MAX_POINTS,
   showCurrent = false,
+  showCharge = true,
   onClick,
 }) => {
-  const points = useMemo(
-    () => flattenCyclePoints(cycle, { downsample: { maxPoints } }),
+  const series = useMemo(
+    () => buildCycleMetricSeries(cycle, { downsample: { maxPoints } }),
     [cycle, maxPoints],
   );
+
+  const voltageSeries = series.metrics.voltage;
+  const currentSeries = series.metrics.current;
+  const chargeSeries = series.metrics.charge;
+
+  const showCurrentTrace = showCurrent && currentSeries.hasData;
+  const showChargeTrace = showCharge && chargeSeries.hasData;
 
   const voltageTrace = useMemo<Data>(() => ({
     type: 'scatter',
     mode: 'lines',
     name: 'Напряжение',
-    x: points.map((p) => p.time),
-    y: points.map((p) => p.voltage),
+    x: voltageSeries.x,
+    y: voltageSeries.y,
     line: { color: '#1f77b4', width: 2 },
     hovertemplate: 't=%{x:.2f}s<br>U=%{y:.3f}В<extra></extra>',
-  }), [points]);
+  }), [voltageSeries]);
 
   const currentTrace = useMemo<Data | null>(() => {
-    if (!showCurrent) return null;
+    if (!showCurrentTrace) return null;
     return {
       type: 'scatter',
       mode: 'lines',
       name: 'Ток',
-      x: points.map((p) => p.time),
-      y: points.map((p) => p.current),
+      x: currentSeries.x,
+      y: currentSeries.y,
       yaxis: 'y2',
       line: { color: '#ff7f0e', width: 1.5, dash: 'dot' },
       hovertemplate: 't=%{x:.2f}s<br>I=%{y:.3f}A<extra></extra>',
     } satisfies Data;
-  }, [points, showCurrent]);
+  }, [currentSeries, showCurrentTrace]);
+
+  const chargeTrace = useMemo<Data | null>(() => {
+    if (!showChargeTrace) return null;
+    const axisName = showCurrentTrace ? 'y3' : 'y2';
+    return {
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Заряд',
+      x: chargeSeries.x,
+      y: chargeSeries.y,
+      yaxis: axisName,
+      line: { color: '#2ca02c', width: 1.8 },
+      hovertemplate: 't=%{x:.2f}s<br>Q=%{y:.3f}Кл<extra></extra>',
+    } satisfies Data;
+  }, [chargeSeries, showChargeTrace, showCurrentTrace]);
 
   const data = useMemo(() => {
-    return currentTrace ? [voltageTrace, currentTrace] : [voltageTrace];
-  }, [voltageTrace, currentTrace]);
+    const traces: Data[] = [voltageTrace];
+    if (currentTrace) traces.push(currentTrace);
+    if (chargeTrace) traces.push(chargeTrace);
+    return traces;
+  }, [voltageTrace, currentTrace, chargeTrace]);
 
   const layout = useMemo<Partial<Layout>>(() => ({
     height,
     margin: { l: 10, r: 10, t: 6, b: 12, pad: 0 },
     xaxis: { visible: false, showgrid: false, zeroline: false },
     yaxis: { visible: false, showgrid: false, zeroline: false },
-    yaxis2: currentTrace
+    yaxis2: currentTrace || chargeTrace
+      ? {
+          overlaying: 'y',
+          side: 'right',
+          visible: false,
+        }
+      : undefined,
+    yaxis3: currentTrace && chargeTrace
       ? {
           overlaying: 'y',
           side: 'right',
@@ -70,9 +104,9 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
     showlegend: false,
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
-  }), [height, currentTrace]);
+  }), [height, currentTrace, chargeTrace]);
 
-  if (!points.length) {
+  if (!series.points.length) {
     return <div style={placeholderStyle}>Нет точек</div>;
   }
 
@@ -99,12 +133,14 @@ export const MiniCycleChart: React.FC<MiniCycleChartProps> = ({
         overflow: 'hidden',
         border: '1px solid rgba(0,0,0,0.08)',
         background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(240,244,248,0.8) 100%)',
+        minHeight: height,
       }}
     >
       <PlotlyChart
         data={data}
         layout={layout}
         config={{ displayModeBar: false, staticPlot: false }}
+        style={{ height }}
       />
     </div>
   );

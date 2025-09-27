@@ -43,6 +43,7 @@ export const CycleDetailsModal: React.FC<CycleDetailsModalProps> = ({ cycle, onC
             highlightCycle={cycle.cycle}
             height={380}
             initialShowCurrent
+            initialShowCharge
           />
         </div>
       </div>

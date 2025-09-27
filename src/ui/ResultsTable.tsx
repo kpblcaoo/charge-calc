@@ -51,6 +51,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({ data, onCycleSelect 
             <div style={chartWrapperStyle}>
               <MiniCycleChart
                 cycle={cycle}
+                showCharge
                 onClick={onCycleSelect ? () => onCycleSelect(cycle) : undefined}
               />
               {onCycleSelect && <span style={chartHintStyle}>Нажмите, чтобы открыть подробный график</span>}

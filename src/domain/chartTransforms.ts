@@ -9,6 +9,20 @@ export interface ChartPoint {
   step: number;
 }
 
+export type MetricKey = 'voltage' | 'current' | 'charge';
+
+export interface MetricSeries {
+  x: number[];
+  y: Array<number | null>;
+  hasData: boolean;
+}
+
+export interface CycleMetricSeries {
+  cycle: number;
+  points: ChartPoint[];
+  metrics: Record<MetricKey, MetricSeries>;
+}
+
 export interface DownsampleOptions {
   maxPoints?: number;
 }
@@ -69,4 +83,50 @@ export function flattenAllCycles(cycles: Cycle[], options?: FlattenOptions): Map
     map.set(cycle.cycle, flattenCyclePoints(cycle, options));
   }
   return map;
+}
+
+function extractMetricValue(point: ChartPoint, metric: MetricKey): number | null {
+  switch (metric) {
+    case 'voltage':
+      return point.voltage;
+    case 'current':
+      return point.current;
+    case 'charge':
+      return point.charge ?? null;
+    default:
+      return null;
+  }
+}
+
+export function buildMetricSeries(points: ChartPoint[], metric: MetricKey): MetricSeries {
+  const x: number[] = [];
+  const y: Array<number | null> = [];
+  let hasData = false;
+  for (const point of points) {
+    const value = extractMetricValue(point, metric);
+    if (value != null) {
+      hasData = true;
+    }
+    x.push(point.time);
+    y.push(value);
+  }
+  return { x, y, hasData };
+}
+
+export function buildCycleMetricSeries(cycle: Cycle, options?: FlattenOptions): CycleMetricSeries {
+  const points = flattenCyclePoints(cycle, options);
+  const metrics: Record<MetricKey, MetricSeries> = {
+    voltage: buildMetricSeries(points, 'voltage'),
+    current: buildMetricSeries(points, 'current'),
+    charge: buildMetricSeries(points, 'charge'),
+  };
+  return {
+    cycle: cycle.cycle,
+    points,
+    metrics,
+  };
+}
+
+export function buildAllCyclesMetricSeries(cycles: Cycle[], options?: FlattenOptions): CycleMetricSeries[] {
+  return cycles.map((cycle) => buildCycleMetricSeries(cycle, options));
 }
